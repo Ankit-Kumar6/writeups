@@ -1,0 +1,80 @@
+This is a writeup of reverse engineering challenge from pwnable.kr called "flag".
+I used Radare2 to solve this challenge, so let's get started.
+
+
+r2 ./flag    //Let's go through the file first
+DON'T forget to change the permissions of the file using chmod.
+
+
+Now, let's analyze the file and see what functions are there,
+![Untitled](https://github.com/Ankit-Kumar6/Automation/assets/57087618/eaedb1a4-6d1b-4e6e-af5b-65272f08d905)
+
+https://cdn-images-1.medium.com/max/1000/1*dx8v0_qJuHRMSltVidlJcA.png
+Also let's see the strings that this binary file contains:
+
+
+azz //This is the command to view strings
+or
+azz ~.. //This basically using less to that command
+
+![Untitled 1](https://github.com/Ankit-Kumar6/Automation/assets/57087618/23335310-6ff7-4b39-884f-24f8746b5e43)
+
+After running strings, I found this UPX! at the top. Upon further googling, I found that this a technique that can be used to run the program while being compressed and was often used in malwares.
+So, lets quit the radare and quickly decompress it.
+
+
+sudo apt install upx-ucl   //Installing the upx
+upx -d ./flag             //Decompressing the file
+
+![Untitled 2](https://github.com/Ankit-Kumar6/Automation/assets/57087618/7dafa606-cbbd-406e-bedb-e75a4f89ae8d)
+
+It automatically overwrites the file after decompressing it.
+Now lets run the program again using radare2.
+![Untitled 3](https://github.com/Ankit-Kumar6/Automation/assets/57087618/5ef54ea2-dfa1-469a-84f7-76ba1f8dedcd)
+
+Now let's seek to main function and view it.
+![Untitled 4](https://github.com/Ankit-Kumar6/Automation/assets/57087618/c7015892-f5c2-4b23-81b5-5269f07a010f)
+
+
+Hit p till you reach the decompiled view of the binary file.
+You can also hit P if you wanna go backwards.
+
+![Untitled 5](https://github.com/Ankit-Kumar6/Automation/assets/57087618/248a9942-b742-47b0-afa3-a2a33cdb4917)
+
+Here we can see that there are three functions in total, one is puts, the other one is malloc and according to the author it says there's also strcpy function so the last one must be it.
+To solve this and get the flag, we will go to the address after the strcpy function call, and print the flag from var_8h.
+To do that let's enter debug mode in radare2.
+Quit the program, use 'q' to do that.
+And re run the program in debug mode.
+
+
+r2 -d ./flag
+
+![Untitled 6](https://github.com/Ankit-Kumar6/Automation/assets/57087618/e1c938b0-a010-42be-85fb-9dc8c6a4001b
+
+Analyze the flag, wait a few minutes for that to analyze the binary file.
+Then seek to main function. Hit 'V' to enter visual mode.
+Now navigate to the debug view by pressing 'p' and going forward.
+![Untitled 7](https://github.com/Ankit-Kumar6/Automation/assets/57087618/2f2484d0-de14-404c-abbf-542405c3c5bb)
+
+Now, set a breakpoint at the address '0x0040119a' just after the function call. To do that hit ':' semicolon. Then,
+
+
+db 0x0040119a     //set a breakpoint at this address
+dc                //countinue execution
+
+![Untitled 8](https://github.com/Ankit-Kumar6/Automation/assets/57087618/96446dac-16b8-4609-a61f-e1aed8760665)
+
+Now let's read the address where the flag is:
+
+
+afvd var_8h      //afvd is used to show the value of args/local in the in the debugger
+pf S @rbp-0x8   //printf string at rbp-0x8
+
+![Untitled 9](https://github.com/Ankit-Kumar6/Automation/assets/57087618/a0d4ea5c-ba7d-44d1-a90b-862b89c1f5d7)
+
+And we got the flag:
+"UPX...? sounds like a delivery service :)"
+
+
+pwned!
